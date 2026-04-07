@@ -33,14 +33,21 @@ bun run db:seed       # 种子数据
 ```
 helpdesk/
 ├── client/           # React前端 (Vite + Tailwind CSS v4)
-│   └── src/
-│       ├── App.tsx
-│       ├── main.tsx
-│       └── index.css    # Tailwind CSS v4: @import 'tailwindcss'
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   └── index.css
+│   └── vite.config.ts
 └── server/           # Bun + Express后端
-    └── src/
-        ├── index.ts     # Express入口
-        └── lib/env.ts   # 环境变量验证
+    ├── src/
+    │   ├── index.ts     # Express入口
+    │   └── lib/
+    │       ├── env.ts
+    │       └── prisma.ts  # Prisma Client
+    ├── prisma/
+    │   ├── schema.prisma
+    │   └── prisma.config.ts
+    └── generated/       # Prisma 生成的客户端
 ```
 
 **后端端口**: 3000 | **前端端口**: 5173 (或自动选择)
@@ -51,11 +58,48 @@ helpdesk/
 
 ## 数据库
 
-使用 Prisma ORM，Schema 设计在 `server/prisma/schema.prisma`。认证采用**数据库会话** (express-session + connect-pg-simple)，Session 存储在 PostgreSQL 中。
+使用 Prisma ORM (v7) + PostgreSQL。Schema 设计在 `server/prisma/schema.prisma`。认证采用**数据库会话** (express-session + connect-pg-simple)，Session 存储在 PostgreSQL 中。
+
+**Prisma 7 配置**:
+
+- `prisma.config.ts` 放在 server 目录
+- Generator output: `../generated/prisma`
+- 使用 `@prisma/adapter-pg` 驱动适配器
+- PrismaClient 初始化: `new PrismaClient({ adapter: new PrismaPg({ connectionString }) })`
+
+## 路径别名
+
+`@/` 指向 `src/` 目录:
+
+```json
+// client/tsconfig.json & server/tsconfig.json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+`server/tsconfig.json` 中 `@generated/` 指向 `generated/` 目录
+
+```json
+// server/tsconfig.json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@generated/*": ["./generated/*"]
+    }
+  }
+}
+```
 
 ## 当前进度
 
-Phase 0.1 已完成 (项目初始化)，正在继续 Phase 0.2 数据库设置。
+Phase 0.1 已完成 (项目初始化)
+Phase 0.2 进行中 (数据库设置 - Prisma 配置完成)
 
 ## 前端注意
 
