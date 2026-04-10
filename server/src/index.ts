@@ -1,33 +1,33 @@
+import { toNodeHandler } from 'better-auth/node'
 import cors from 'cors'
 import express from 'express'
+import { auth } from './lib/auth'
 import { validateEnv } from './lib/env'
-import { prisma } from './lib/prisma'
+import { requireAuth } from './middleware/require-auth'
 
 const app = express()
 const PORT = process.env.PORT || 3000
 
-// Middleware
-app.use(cors())
+// CORS（允许前端 5173 端口访问）
+app.use(
+  cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  }),
+)
+
+app.all('/api/auth/*splat', toNodeHandler(auth))
 app.use(express.json())
-
-// Health check
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
-})
-
-// Routes
 app.get('/api', (_req, res) => {
   res.json({ message: 'Helpdesk API v1.0.0' })
 })
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok' })
+})
 
-// Database test route
-app.get('/api/db-test', async (_req, res) => {
-  try {
-    await prisma.$connect
-    res.json({ status: 'ok', message: 'Database connected successfully!' })
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Database connection failed' })
-  }
+// 示例：受保护的路由
+app.get('/api/me', requireAuth, (req, res) => {
+  res.json({ user: req.user })
 })
 
 // Start server

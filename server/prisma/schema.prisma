@@ -6,3 +6,104 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+/// 用户表
+model Users {
+  /// 用户ID
+  id            String     @id
+  /// 用户名
+  name          String
+  /// 邮箱（唯一）
+  email         String
+  /// 邮箱是否已验证
+  emailVerified Boolean    @default(false)
+  /// 头像URL
+  image         String?
+  /// 创建时间
+  createdAt     DateTime   @default(now())
+  /// 更新时间
+  updatedAt     DateTime   @updatedAt
+  sessions      Sessions[]
+  accounts      Account[]
+
+  @@unique([email])
+  @@map("users")
+}
+
+/// 会话表
+model Sessions {
+  /// 会话ID
+  id        String   @id
+  /// 过期时间
+  expiresAt DateTime
+  /// 会话令牌（唯一）
+  token     String
+  /// 创建时间
+  createdAt DateTime @default(now())
+  /// 更新时间
+  updatedAt DateTime @updatedAt
+  /// IP地址
+  ipAddress String?
+  /// 用户代理
+  userAgent String?
+  /// 用户ID
+  userId    String
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// 账户表（支持多种认证方式）
+model Account {
+  /// 账户ID
+  id                    String    @id
+  /// 第三方账户ID
+  accountId             String
+  /// 认证提供商ID（如 google, github）
+  providerId            String
+  /// 用户ID
+  userId                String
+  user                  Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 访问令牌
+  accessToken           String?
+  /// 刷新令牌
+  refreshToken          String?
+  /// ID令牌
+  idToken               String?
+  /// 访问令牌过期时间
+  accessTokenExpiresAt  DateTime?
+  /// 刷新令牌过期时间
+  refreshTokenExpiresAt DateTime?
+  /// OAuth范围
+  scope                 String?
+  /// 密码（用于邮箱密码认证）
+  password              String?
+  /// 创建时间
+  createdAt             DateTime  @default(now())
+  /// 更新时间
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+/// 验证令牌表（邮箱验证、密码重置等）
+model Verification {
+  /// 令牌ID
+  id         String   @id
+  /// 标识符（邮箱地址等）
+  identifier String
+  /// 令牌值
+  value      String
+  /// 过期时间
+  expiresAt  DateTime
+  /// 创建时间
+  createdAt  DateTime @default(now())
+  /// 更新时间
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
